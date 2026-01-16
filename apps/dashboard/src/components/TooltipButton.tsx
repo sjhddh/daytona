@@ -1,9 +1,5 @@
-/*
- * Copyright 2025 Daytona Platforms Inc.
- * SPDX-License-Identifier: AGPL-3.0
- */
-
 import { ComponentProps, ReactNode } from 'react'
+
 import { Button } from './ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 
@@ -27,7 +23,7 @@ function TooltipButton({
     <TooltipProvider>
       <Tooltip delayDuration={0}>
         <TooltipTrigger asChild>
-          <Button ref={ref} {...props} size={size} aria-label={tooltipText} />
+          <Button ref={ref} {...props} aria-label={tooltipText} />
         </TooltipTrigger>
         <TooltipContent side={side}>{tooltipContent || <div>{tooltipText}</div>}</TooltipContent>
       </Tooltip>

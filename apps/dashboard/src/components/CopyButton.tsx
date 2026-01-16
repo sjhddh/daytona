@@ -1,8 +1,3 @@
-/*
- * Copyright 2025 Daytona Platforms Inc.
- * SPDX-License-Identifier: AGPL-3.0
- */
-
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard'
 import { cn } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -24,41 +19,22 @@ function CopyButton({
   value,
   className,
   tooltipText,
-  variant = 'ghost',
-  autoHide,
   ...props
-}: { value: string; tooltipText?: string; autoHide?: boolean } & Omit<
-  ComponentProps<typeof TooltipButton>,
-  'tooltipText'
->) {
+}: { value: string; tooltipText?: string } & Omit<ComponentProps<typeof TooltipButton>, 'tooltipText'>) {
   const [copied, copy] = useCopyToClipboard()
 
   return (
     <TooltipButton
       tooltipText={tooltipText || (copied ? 'Copied' : 'Copy')}
       onClick={() => copy(value)}
-      className={cn(
-        'font-sans text-muted-foreground hover:text-foreground',
-        {
-          'opacity-0 -translate-x-1': autoHide && !copied,
-          'group-hover/copy-button:opacity-100 group-hover/copy-button:translate-x-0 group-focus-within/copy-button:opacity-100 group-focus-within/copy-button:translate-x-0':
-            autoHide,
-          'opacity-100 translate-x-0': autoHide && copied,
-        },
-        className,
-      )}
-      variant={variant}
+      className={cn('w-8 h-8 font-sans', className)}
       {...props}
     >
       <AnimatePresence initial={false} mode="wait">
         {copied ? (
-          <MotionCheckIcon
-            className={cn('size-4 text-success', { 'size-3.5': props.size === 'icon-xs' })}
-            key="copied"
-            {...iconProps}
-          />
+          <MotionCheckIcon className="size-4" key="copied" {...iconProps} />
         ) : (
-          <MotionCopyIcon className={cn('size-4', { 'size-3': props.size === 'icon-xs' })} key="copy" {...iconProps} />
+          <MotionCopyIcon className="size-4" key="copy" {...iconProps} />
         )}
       </AnimatePresence>
     </TooltipButton>
