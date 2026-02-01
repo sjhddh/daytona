@@ -16,7 +16,8 @@ import {
   VNCInteractionOptionsSectionComponentProps,
 } from '@/enums/Playground'
 import { usePlayground } from '@/hooks/usePlayground'
-import { CompressedScreenshotResponse, RegionScreenshotResponse, ScreenshotResponse } from '@daytonaio/api-client'
+import { CompressedScreenshotResponse, RegionScreenshotResponse } from '@daytonaio/api-client'
+import { ScreenshotResponse } from '@daytonaio/toolbox-api-client'
 import { ComputerUse, ScreenshotRegion } from '@daytonaio/sdk'
 import { useState } from 'react'
 import PlaygroundActionForm from '../../ActionForm'
