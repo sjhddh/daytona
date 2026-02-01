@@ -10,9 +10,8 @@ import {
   VNCInteractionOptionsSectionsData,
   WrapVNCInvokeApiType,
 } from '@/enums/Playground'
-import { useApi } from '@/hooks/useApi'
 import { usePlayground } from '@/hooks/usePlayground'
-import { useTemporarySandbox } from '@/hooks/useTemporarySandbox'
+import { usePlaygroundSandbox } from '@/hooks/usePlaygroundSandbox'
 import { createErrorMessageOutput } from '@/lib/playground'
 import { ComputerUse } from '@daytonaio/sdk'
 import { CameraIcon, KeyboardIcon, MonitorIcon, MousePointer2Icon } from 'lucide-react'
@@ -39,22 +38,20 @@ const VNCInteractionOptions: React.FC = () => {
   const { VNCInteractionOptionsParamsState, setVNCInteractionOptionsParamValue } = usePlayground()
   const VNCUrl = VNCInteractionOptionsParamsState.VNCUrl
 
-  const { toolboxApi } = useApi()
-  // Create temporary sandbox which will be used for VNC actions
-  const VNCTemporarySandboxData = useTemporarySandbox()
+  // Get sandbox which will be used for VNC actions
+  const VNCSandboxData = usePlaygroundSandbox()
 
   useEffect(() => {
-    // Sync VNCDesktopWindowResponse with temporary sandbox creation data
-    setVNCInteractionOptionsParamValue('VNCSandboxData', VNCTemporarySandboxData)
-    if (VNCTemporarySandboxData.error) setDisableOnSandboxError(true) // In case of sandbox creation error we disable VNC actions run
-  }, [setVNCInteractionOptionsParamValue, VNCTemporarySandboxData])
+    // Sync VNCDesktopWindowResponse with sandbox creation data
+    setVNCInteractionOptionsParamValue('VNCSandboxData', VNCSandboxData)
+    if (VNCSandboxData.error) setDisableOnSandboxError(true) // In case of sandbox creation error we disable VNC actions run
+  }, [setVNCInteractionOptionsParamValue, VNCSandboxData])
 
   useEffect(() => {
-    // Create ComputerUse client when computer use is initialized for temporary sandbox
+    // Create ComputerUse client when computer use is initialized for sandbox
     if (!VNCUrl) setComputerUseClient(null)
-    else if (VNCTemporarySandboxData.sandbox)
-      setComputerUseClient(new ComputerUse(VNCTemporarySandboxData.sandbox.id, toolboxApi))
-  }, [VNCUrl, VNCTemporarySandboxData, toolboxApi])
+    else if (VNCSandboxData.sandbox) setComputerUseClient(VNCSandboxData.sandbox.computerUse)
+  }, [VNCUrl, VNCSandboxData])
 
   // Standardize VNC invokeAPI call flow with this method
   const wrapVNCInvokeApi = useCallback<WrapVNCInvokeApiType>(

@@ -153,7 +153,7 @@ const VNCDesktopWindowResponse: React.FC<VNCDesktopWindowResponseProps> = ({ get
     setVNCInteractionOptionsParamValue('VNCUrl', null) // Reset VNCurl value
     if (!VNCSandboxData) return
     if (VNCSandboxData.sandbox) {
-      // Temporary sandbox created -> setup VNC
+      // Sandbox created -> setup VNC
       setupVNCComputerUse()
     } else if (VNCSandboxData.error) setLoadingVNCUrl(false)
   }, [setVNCInteractionOptionsParamValue, VNCSandboxData, getVNCComputerUseUrl, setupVNCComputerUse])

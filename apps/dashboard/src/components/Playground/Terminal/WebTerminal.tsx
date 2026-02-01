@@ -5,7 +5,7 @@
 
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
-import { useTemporarySandbox } from '@/hooks/useTemporarySandbox'
+import { usePlaygroundSandbox } from '@/hooks/usePlaygroundSandbox'
 import { handleApiError } from '@/lib/error-handling'
 import { Sandbox } from '@daytonaio/sdk'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -29,7 +29,7 @@ const WebTerminal: React.FC<WebTerminalProps> = ({ getPortPreviewUrl, className 
   const [loadingTerminalUrl, setLoadingTerminalUrl] = useState(true)
   const [terminalUrl, setTerminalUrl] = useState<string | null>(null)
 
-  const { sandbox: terminalSandbox, error: terminalSandboxError } = useTemporarySandbox()
+  const { sandbox: terminalSandbox, error: terminalSandboxError } = usePlaygroundSandbox()
 
   const getWebTerminalUrl = useCallback(
     async (sandbox: Sandbox) => {

@@ -3,7 +3,16 @@
  * SPDX-License-Identifier: AGPL-3.0
  */
 
-import { CodeLanguage, Resources, CreateSandboxBaseParams, ScreenshotRegion, Daytona } from '@daytonaio/sdk'
+import {
+  CodeLanguage,
+  Resources,
+  CreateSandboxBaseParams,
+  ScreenshotRegion,
+  Daytona,
+  Sandbox,
+  CreateSandboxFromImageParams,
+  CreateSandboxFromSnapshotParams,
+} from '@daytonaio/sdk'
 import {
   KeyboardHotKey,
   KeyboardPress,
@@ -27,7 +36,7 @@ import {
   CreateFolderParams,
   DeleteFileParams,
 } from '@/enums/Playground'
-import { UseTemporarySandboxResult } from '@/hooks/useTemporarySandbox'
+import { UsePlaygroundSandboxResult } from '@/hooks/usePlaygroundSandbox'
 import { createContext, ReactNode } from 'react'
 
 export interface SandboxParams {
@@ -60,7 +69,7 @@ export interface VNCInteractionOptionsParams {
   screenshotOptionsConfig: CustomizedScreenshotOptions
   screenshotRegionConfig: ScreenshotRegion
   responseContent?: string | ReactNode
-  VNCSandboxData?: UseTemporarySandboxResult
+  VNCSandboxData?: UsePlaygroundSandboxResult
   VNCUrl: string | null
 }
 
@@ -117,6 +126,20 @@ export type PlaygroundActionParamValueSetter = <A extends PlaygroundActions, T, 
   value: any,
 ) => void
 
+export type SandboxParametersInfo = {
+  useLanguageParam: boolean
+  useResources: boolean
+  useResourcesCPU: boolean
+  useResourcesMemory: boolean
+  useResourcesDisk: boolean
+  createSandboxParamsExist: boolean
+  useAutoStopInterval: boolean
+  useAutoArchiveInterval: boolean
+  useAutoDeleteInterval: boolean
+  useSandboxCreateParams: boolean
+  createSandboxParams: CreateSandboxFromImageParams | CreateSandboxFromSnapshotParams
+}
+
 export interface IPlaygroundContext {
   sandboxParametersState: SandboxParams
   setSandboxParameterValue: SetSandboxParamsValue
@@ -129,6 +152,9 @@ export interface IPlaygroundContext {
   runningActionMethod: RunningActionMethodName
   actionRuntimeError: ActionRuntimeError
   DaytonaClient: Daytona | null
+  sandbox: Sandbox | null
+  setSandbox: React.Dispatch<React.SetStateAction<Sandbox | null>>
+  getSandboxParametersInfo: () => SandboxParametersInfo
 }
 
 export const PlaygroundContext = createContext<IPlaygroundContext | null>(null)

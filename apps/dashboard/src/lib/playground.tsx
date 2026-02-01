@@ -34,3 +34,5 @@ console.log(greet("Daytona"));`
 print(greet("Daytona"))`
   }
 }
+
+export const objectHasAnyValue = (obj: object) => Object.values(obj).some((v) => v !== '' && v !== undefined)

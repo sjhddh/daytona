@@ -16,15 +16,10 @@ import {
   ProcessCodeExecutionActions,
 } from '@/enums/Playground'
 import { usePlayground } from '@/hooks/usePlayground'
+import { usePlaygroundSandbox } from '@/hooks/usePlaygroundSandbox'
 import { createErrorMessageOutput } from '@/lib/playground'
 import { cn } from '@/lib/utils'
-import {
-  CodeLanguage,
-  CreateSandboxFromImageParams,
-  CreateSandboxFromSnapshotParams,
-  Image,
-  Sandbox,
-} from '@daytonaio/sdk'
+import { CodeLanguage, Sandbox } from '@daytonaio/sdk'
 import { ChevronUpIcon, Loader2, PanelBottom, Play, XIcon } from 'lucide-react'
 import { ReactNode, useCallback, useMemo, useRef, useState } from 'react'
 import { Group, Panel, usePanelRef } from 'react-resizable-panels'
@@ -44,9 +39,21 @@ const SandboxCodeSnippetsResponse = ({ className }: { className?: string }) => {
   const [codeSnippetOutput, setCodeSnippetOutput] = useState<string | ReactNode>('')
   const [isCodeSnippetRunning, setIsCodeSnippetRunning] = useState<boolean>(false)
 
-  const { sandboxParametersState, DaytonaClient, actionRuntimeError } = usePlayground()
+  const { sandboxParametersState, actionRuntimeError, getSandboxParametersInfo } = usePlayground()
+  const { updateSandbox, createSandboxFromParams } = usePlaygroundSandbox(true)
 
-  const objectHasAnyValue = (obj: object) => Object.values(obj).some((v) => v !== '' && v !== undefined)
+  const {
+    useLanguageParam,
+    useResources,
+    useResourcesCPU,
+    useResourcesMemory,
+    useResourcesDisk,
+    createSandboxParamsExist,
+    useAutoStopInterval,
+    useAutoArchiveInterval,
+    useAutoDeleteInterval,
+    useSandboxCreateParams,
+  } = getSandboxParametersInfo()
 
   // useRef prevents new object reference creation on every render which would triger useEffect calls on every render
   const codeSnippetsSectionStartNewLinesData = useRef<CodeSnippetsSectionStartNewLinesData>({
@@ -71,8 +78,6 @@ const SandboxCodeSnippetsResponse = ({ className }: { className?: string }) => {
 
   const useConfigObject = false // Currently not needed, we use jwtToken for client config
 
-  const useLanguageParam = sandboxParametersState['language']
-
   const fileSystemListFilesLocationSet = !actionRuntimeError[FileSystemActions.LIST_FILES]
 
   // All parameters are required
@@ -95,21 +100,6 @@ const SandboxCodeSnippetsResponse = ({ className }: { className?: string }) => {
   const gitStatusOperationLocationSet = !actionRuntimeError[GitOperationsActions.GIT_STATUS]
 
   const gitBranchesOperationLocationSet = !actionRuntimeError[GitOperationsActions.GIT_BRANCHES_LIST]
-
-  const useResources = objectHasAnyValue(sandboxParametersState['resources'])
-  const useResourcesCPU = useResources && sandboxParametersState['resources']['cpu'] !== undefined
-  const useResourcesMemory = useResources && sandboxParametersState['resources']['memory'] !== undefined
-  const useResourcesDisk = useResources && sandboxParametersState['resources']['disk'] !== undefined
-
-  const createSandboxParamsExist = objectHasAnyValue(sandboxParametersState['createSandboxBaseParams'])
-  const useAutoStopInterval =
-    createSandboxParamsExist && sandboxParametersState['createSandboxBaseParams']['autoStopInterval'] !== undefined
-  const useAutoArchiveInterval =
-    createSandboxParamsExist && sandboxParametersState['createSandboxBaseParams']['autoArchiveInterval'] !== undefined
-  const useAutoDeleteInterval =
-    createSandboxParamsExist && sandboxParametersState['createSandboxBaseParams']['autoDeleteInterval'] !== undefined
-
-  const useSandboxCreateParams = useLanguageParam || useResources || createSandboxParamsExist
 
   const getImportsCodeSnippet = useCallback(() => {
     const python =
@@ -525,37 +515,8 @@ main().catch(console.error)`,
     let sandbox: Sandbox | undefined
 
     try {
-      if (!DaytonaClient) throw new Error('Unable to create Daytona client: missing access token or organization ID.')
-      const createSandboxFromImageParams: CreateSandboxFromImageParams = { image: Image.debianSlim('3.13') } // Default and fixed image if CreateSandboxFromImageParams are used
-      const createSandboxFromSnapshotParams: CreateSandboxFromSnapshotParams = { snapshot: '' } // Currently createSandboxFromSnapshotParams isn't supported but we put it for easier compatibility later + its used with empty snapshot when createSandboxFromImage is false
-      const createSandboxFromImage = useSandboxCreateParams
-      if (createSandboxFromImage) {
-        // Set CreateSandboxFromImageParams specific params
-        if (useResources) {
-          createSandboxFromImageParams.resources = {}
-          if (useResourcesCPU) createSandboxFromImageParams.resources.cpu = sandboxParametersState['resources']['cpu']
-          if (useResourcesMemory)
-            createSandboxFromImageParams.resources.memory = sandboxParametersState['resources']['memory']
-          if (useResourcesDisk)
-            createSandboxFromImageParams.resources.disk = sandboxParametersState['resources']['disk']
-        }
-      }
-      const createSandboxParams: CreateSandboxFromImageParams | CreateSandboxFromSnapshotParams = createSandboxFromImage
-        ? createSandboxFromImageParams
-        : createSandboxFromSnapshotParams
-      // Set CreateSandboxBaseParams params which are common for both params types
-      if (useLanguageParam) createSandboxParams.language = sandboxParametersState['language']
-      if (useAutoStopInterval)
-        createSandboxParams.autoStopInterval = sandboxParametersState['createSandboxBaseParams']['autoStopInterval']
-      if (useAutoArchiveInterval)
-        createSandboxParams.autoArchiveInterval =
-          sandboxParametersState['createSandboxBaseParams']['autoArchiveInterval']
-      if (useAutoDeleteInterval)
-        createSandboxParams.autoDeleteInterval = sandboxParametersState['createSandboxBaseParams']['autoDeleteInterval']
-      createSandboxParams.labels = { 'daytona-playground': 'true' }
-      if (useLanguageParam)
-        createSandboxParams.labels['daytona-playground-language'] = sandboxParametersState['language'] as string // useLanguageParam guarantes that value isn't undefined so we put as string to silence TS compiler
-      sandbox = await DaytonaClient.create(createSandboxParams)
+      sandbox = await createSandboxFromParams()
+      await updateSandbox(sandbox)
       codeSnippetOutput = `Sandbox successfully created: ${sandbox.id}\n`
       setCodeSnippetOutput(codeSnippetOutput)
       if (codeToRunExists) {
@@ -657,13 +618,6 @@ main().catch(console.error)`,
         </>,
       )
     } finally {
-      if (sandbox) {
-        try {
-          await sandbox.delete()
-        } catch (cleanupError) {
-          console.error('Failed to delete sandbox during cleanup:', cleanupError)
-        }
-      }
       setIsCodeSnippetRunning(false)
     }
   }

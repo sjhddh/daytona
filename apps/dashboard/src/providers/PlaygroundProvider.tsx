@@ -19,11 +19,11 @@ import {
   SetPlaygroundActionParamValue,
 } from '@/contexts/PlaygroundContext'
 import { ScreenshotFormatOption, MouseButton, MouseScrollDirection } from '@/enums/Playground'
-import { Daytona } from '@daytonaio/sdk'
+import { Daytona, Sandbox, CreateSandboxFromImageParams, CreateSandboxFromSnapshotParams, Image } from '@daytonaio/sdk'
 import { useAuth } from 'react-oidc-context'
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization'
-import { getLanguageCodeToRun } from '@/lib/playground'
-import { useState, useMemo, useCallback } from 'react'
+import { getLanguageCodeToRun, objectHasAnyValue } from '@/lib/playground'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 
 export const PlaygroundProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [sandboxParametersState, setSandboxParametersState] = useState<SandboxParams>({
@@ -144,6 +144,7 @@ export const PlaygroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const [runningActionMethod, setRunningActionMethod] = useState<RunningActionMethodName>(null)
   const [actionRuntimeError, setActionRuntimeError] = useState<ActionRuntimeError>({})
+  const [sandbox, setSandbox] = useState<Sandbox | null>(null)
 
   const validatePlaygroundActionRequiredParams: ValidatePlaygroundActionRequiredParams = useCallback(
     (actionParamsFormData, actionParamsState) => {
@@ -243,6 +244,75 @@ export const PlaygroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     })
   }, [user?.access_token, selectedOrganization?.id])
 
+  const getSandboxParametersInfo = useCallback(() => {
+    const useLanguageParam = !!sandboxParametersState['language']
+
+    const useResources = objectHasAnyValue(sandboxParametersState['resources'])
+    const useResourcesCPU = useResources && sandboxParametersState['resources']['cpu'] !== undefined
+    const useResourcesMemory = useResources && sandboxParametersState['resources']['memory'] !== undefined
+    const useResourcesDisk = useResources && sandboxParametersState['resources']['disk'] !== undefined
+
+    const createSandboxParamsExist = objectHasAnyValue(sandboxParametersState['createSandboxBaseParams'])
+    const useAutoStopInterval =
+      createSandboxParamsExist && sandboxParametersState['createSandboxBaseParams']['autoStopInterval'] !== undefined
+    const useAutoArchiveInterval =
+      createSandboxParamsExist && sandboxParametersState['createSandboxBaseParams']['autoArchiveInterval'] !== undefined
+    const useAutoDeleteInterval =
+      createSandboxParamsExist && sandboxParametersState['createSandboxBaseParams']['autoDeleteInterval'] !== undefined
+
+    const useSandboxCreateParams = useLanguageParam || useResources || createSandboxParamsExist
+
+    const createSandboxFromImageParams: CreateSandboxFromImageParams = { image: Image.debianSlim('3.13') } // Default and fixed image if CreateSandboxFromImageParams are used
+    const createSandboxFromSnapshotParams: CreateSandboxFromSnapshotParams = { snapshot: '' } // Currently createSandboxFromSnapshotParams isn't supported but we put it for easier compatibility later + its used with empty snapshot when createSandboxFromImage is false
+    const createSandboxFromImage = useSandboxCreateParams
+    if (createSandboxFromImage) {
+      // Set CreateSandboxFromImageParams specific params
+      if (useResources) {
+        createSandboxFromImageParams.resources = {}
+        if (useResourcesCPU) createSandboxFromImageParams.resources.cpu = sandboxParametersState['resources']['cpu']
+        if (useResourcesMemory)
+          createSandboxFromImageParams.resources.memory = sandboxParametersState['resources']['memory']
+        if (useResourcesDisk) createSandboxFromImageParams.resources.disk = sandboxParametersState['resources']['disk']
+      }
+    }
+    const createSandboxParams: CreateSandboxFromImageParams | CreateSandboxFromSnapshotParams = createSandboxFromImage
+      ? createSandboxFromImageParams
+      : createSandboxFromSnapshotParams
+    // Set CreateSandboxBaseParams params which are common for both params types
+    if (useLanguageParam) createSandboxParams.language = sandboxParametersState['language']
+    if (useAutoStopInterval)
+      createSandboxParams.autoStopInterval = sandboxParametersState['createSandboxBaseParams']['autoStopInterval']
+    if (useAutoArchiveInterval)
+      createSandboxParams.autoArchiveInterval = sandboxParametersState['createSandboxBaseParams']['autoArchiveInterval']
+    if (useAutoDeleteInterval)
+      createSandboxParams.autoDeleteInterval = sandboxParametersState['createSandboxBaseParams']['autoDeleteInterval']
+    createSandboxParams.labels = { 'daytona-playground': 'true' }
+    if (useLanguageParam)
+      createSandboxParams.labels['daytona-playground-language'] = sandboxParametersState['language'] as string // useLanguageParam guarantes that value isn't undefined so we put as string to silence TS compiler
+    return {
+      useLanguageParam,
+      useResources,
+      useResourcesCPU,
+      useResourcesMemory,
+      useResourcesDisk,
+      createSandboxParamsExist,
+      useAutoStopInterval,
+      useAutoArchiveInterval,
+      useAutoDeleteInterval,
+      useSandboxCreateParams,
+      createSandboxParams,
+    }
+  }, [sandboxParametersState])
+
+  // Cleanup sandbox when provider unmounts (user leaves playground page)
+  useEffect(() => {
+    return () => {
+      if (sandbox) {
+        sandbox.delete().catch((error) => console.error('Failed to delete sandbox on unmount:', error))
+      }
+    }
+  }, [sandbox])
+
   return (
     <PlaygroundContext.Provider
       value={{
@@ -257,6 +327,9 @@ export const PlaygroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         runningActionMethod,
         actionRuntimeError,
         DaytonaClient,
+        sandbox,
+        setSandbox,
+        getSandboxParametersInfo,
       }}
     >
       {children}
