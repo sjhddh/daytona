@@ -304,15 +304,6 @@ export const PlaygroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [sandboxParametersState])
 
-  // Cleanup sandbox when provider unmounts (user leaves playground page)
-  useEffect(() => {
-    return () => {
-      if (sandbox) {
-        sandbox.delete().catch((error) => console.error('Failed to delete sandbox on unmount:', error))
-      }
-    }
-  }, [sandbox])
-
   return (
     <PlaygroundContext.Provider
       value={{
