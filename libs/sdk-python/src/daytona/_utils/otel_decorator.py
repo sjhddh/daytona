@@ -5,7 +5,7 @@
 
 import functools
 import time
-from typing import Any, Callable, Dict, Optional, TypeVar, cast
+from typing import Any, Callable, Optional, TypeVar, cast
 
 from opentelemetry import metrics, trace
 from opentelemetry.trace import Status, StatusCode
@@ -16,7 +16,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 # Lazy initialization to ensure SDK is started before getting tracer/meter
 _tracer = None
 _meter = None
-_execution_histograms: Dict[str, Any] = {}
+_execution_histograms: dict[str, Any] = {}
 
 
 def get_tracer():
@@ -47,7 +47,7 @@ def to_snake_case(string: str) -> str:
 
 def with_span(
     name: Optional[str] = None,
-    attributes: Optional[Dict[str, str]] = None,
+    attributes: Optional[dict[str, str]] = None,
 ) -> Callable[[F], F]:
     """Decorator for instrumenting methods with OpenTelemetry spans (traces only).
 
@@ -69,7 +69,7 @@ def with_span(
 
     def decorator(func: F) -> F:
         @functools.wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args: object, **kwargs: object) -> object:
             # Get class name if this is a method
             class_name = args[0].__class__.__name__ if args and hasattr(args[0], "__class__") else ""
             method_name = func.__name__
@@ -101,7 +101,7 @@ def with_span(
 def with_metric(
     name: Optional[str] = None,
     description: Optional[str] = None,
-    labels: Optional[Dict[str, str]] = None,
+    labels: Optional[dict[str, str]] = None,
 ) -> Callable[[F], F]:
     """Decorator for instrumenting methods with OpenTelemetry metrics (metrics only).
 
@@ -171,7 +171,7 @@ def with_metric(
 def with_instrumentation(
     name: Optional[str] = None,
     description: Optional[str] = None,
-    labels: Optional[Dict[str, str]] = None,
+    labels: Optional[dict[str, str]] = None,
     enable_traces: bool = True,
     enable_metrics: bool = True,
 ) -> Callable[[F], F]:
