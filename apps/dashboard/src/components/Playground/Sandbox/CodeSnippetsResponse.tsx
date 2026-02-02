@@ -53,6 +53,7 @@ const SandboxCodeSnippetsResponse = ({ className }: { className?: string }) => {
     useAutoArchiveInterval,
     useAutoDeleteInterval,
     useSandboxCreateParams,
+    createSandboxFromImage,
   } = getSandboxParametersInfo()
 
   // useRef prevents new object reference creation on every render which would triger useEffect calls on every render
@@ -106,18 +107,22 @@ const SandboxCodeSnippetsResponse = ({ className }: { className?: string }) => {
       [
         'from daytona import Daytona',
         useConfigObject ? 'DaytonaConfig' : '',
-        useSandboxCreateParams ? 'CreateSandboxFromImageParams' : '',
+        useSandboxCreateParams
+          ? createSandboxFromImage
+            ? 'CreateSandboxFromImageParams'
+            : 'CreateSandboxFromSnapshotParams'
+          : '',
         useResources ? 'Resources' : '',
-        useSandboxCreateParams ? 'Image' : '',
+        createSandboxFromImage ? 'Image' : '',
       ]
         .filter(Boolean)
         .join(', ') + '\n'
     const typeScript =
-      ['import { Daytona', useConfigObject ? 'DaytonaConfig' : '', useSandboxCreateParams ? 'Image' : '']
+      ['import { Daytona', useConfigObject ? 'DaytonaConfig' : '', createSandboxFromImage ? 'Image' : '']
         .filter(Boolean)
         .join(', ') + " } from '@daytonaio/sdk'\n"
     return { python, typeScript }
-  }, [useConfigObject, useSandboxCreateParams, useResources])
+  }, [useConfigObject, useSandboxCreateParams, createSandboxFromImage, useResources])
 
   const getDaytonaConfigCodeSnippet = useCallback(() => {
     let python = '',
@@ -190,8 +195,8 @@ const SandboxCodeSnippetsResponse = ({ className }: { className?: string }) => {
       const pythonIndentation = '\t'
       const typeScriptIndentation = '\t\t\t'
       python = [
-        '\n\nparams = CreateSandboxFromImageParams(',
-        `${pythonIndentation}image=Image.debian_slim("3.12"),`,
+        `\n\nparams = ${createSandboxFromImage ? 'CreateSandboxFromImageParams' : 'CreateSandboxFromSnapshotParams'}(`,
+        createSandboxFromImage ? `${pythonIndentation}image=Image.debian_slim("3.12"),` : '',
         useResources ? `${pythonIndentation}resources=resources,` : '',
         useLanguageParam ? `${pythonIndentation}language="${sandboxParametersState['language']}"` : '',
         ...(createSandboxParamsExist
@@ -212,7 +217,8 @@ const SandboxCodeSnippetsResponse = ({ className }: { className?: string }) => {
         .filter(Boolean)
         .join('\n')
       typeScript = [
-        `{\n${typeScriptIndentation}image: Image.debianSlim("3.13"),`,
+        `{`,
+        createSandboxFromImage ? `${typeScriptIndentation}image: Image.debianSlim("3.13"),` : '',
         getResourcesCodeSnippet().typeScript,
         useLanguageParam ? `${typeScriptIndentation}language: '${sandboxParametersState['language']}',` : '',
         ...(createSandboxParamsExist
@@ -244,6 +250,7 @@ const SandboxCodeSnippetsResponse = ({ className }: { className?: string }) => {
     useAutoArchiveInterval,
     useAutoDeleteInterval,
     sandboxParametersState,
+    createSandboxFromImage,
   ])
 
   const getDaytonaCreateSnippet = useCallback(() => {

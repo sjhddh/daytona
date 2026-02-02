@@ -19,19 +19,19 @@ import {
   SetPlaygroundActionParamValue,
 } from '@/contexts/PlaygroundContext'
 import { ScreenshotFormatOption, MouseButton, MouseScrollDirection } from '@/enums/Playground'
+import { DEFAULT_CPU_RESOURCES, DEFAULT_MEMORY_RESOURCES, DEFAULT_DISK_RESOURCES } from '@/constants/Playground'
 import { Daytona, Sandbox, CreateSandboxFromImageParams, CreateSandboxFromSnapshotParams, Image } from '@daytonaio/sdk'
 import { useAuth } from 'react-oidc-context'
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization'
 import { getLanguageCodeToRun, objectHasAnyValue } from '@/lib/playground'
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 
 export const PlaygroundProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [sandboxParametersState, setSandboxParametersState] = useState<SandboxParams>({
     resources: {
-      cpu: 1,
-      // gpu: 0,
-      memory: 1,
-      disk: 3,
+      cpu: DEFAULT_CPU_RESOURCES,
+      memory: DEFAULT_MEMORY_RESOURCES,
+      disk: DEFAULT_DISK_RESOURCES,
     },
     createSandboxBaseParams: {
       autoStopInterval: 15,
@@ -246,11 +246,17 @@ export const PlaygroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const getSandboxParametersInfo = useCallback(() => {
     const useLanguageParam = !!sandboxParametersState['language']
-
-    const useResources = objectHasAnyValue(sandboxParametersState['resources'])
-    const useResourcesCPU = useResources && sandboxParametersState['resources']['cpu'] !== undefined
-    const useResourcesMemory = useResources && sandboxParametersState['resources']['memory'] !== undefined
-    const useResourcesDisk = useResources && sandboxParametersState['resources']['disk'] !== undefined
+    const resourceValuesExist = objectHasAnyValue(sandboxParametersState['resources'])
+    const useResourcesCPU = resourceValuesExist && sandboxParametersState['resources']['cpu'] !== undefined
+    const useResourcesMemory = resourceValuesExist && sandboxParametersState['resources']['memory'] !== undefined
+    const useResourcesDisk = resourceValuesExist && sandboxParametersState['resources']['disk'] !== undefined
+    const useDefaultResourceValues = !(
+      (useResourcesCPU && sandboxParametersState['resources']['cpu'] !== DEFAULT_CPU_RESOURCES) ||
+      (useResourcesMemory && sandboxParametersState['resources']['memory'] !== DEFAULT_MEMORY_RESOURCES) ||
+      (useResourcesDisk && sandboxParametersState['resources']['disk'] !== DEFAULT_DISK_RESOURCES)
+    )
+    // We specifiy resources for sandbox creation if there is any specificed resource value which has value different from the default one
+    const useResources = resourceValuesExist && !useDefaultResourceValues
 
     const createSandboxParamsExist = objectHasAnyValue(sandboxParametersState['createSandboxBaseParams'])
     const useAutoStopInterval =
@@ -264,7 +270,8 @@ export const PlaygroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     const createSandboxFromImageParams: CreateSandboxFromImageParams = { image: Image.debianSlim('3.13') } // Default and fixed image if CreateSandboxFromImageParams are used
     const createSandboxFromSnapshotParams: CreateSandboxFromSnapshotParams = { snapshot: '' } // Currently createSandboxFromSnapshotParams isn't supported but we put it for easier compatibility later + its used with empty snapshot when createSandboxFromImage is false
-    const createSandboxFromImage = useSandboxCreateParams
+    // Create from base image if default resource values are not used
+    const createSandboxFromImage = !useDefaultResourceValues
     if (createSandboxFromImage) {
       // Set CreateSandboxFromImageParams specific params
       if (useResources) {
@@ -300,6 +307,7 @@ export const PlaygroundProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       useAutoArchiveInterval,
       useAutoDeleteInterval,
       useSandboxCreateParams,
+      createSandboxFromImage,
       createSandboxParams,
     }
   }, [sandboxParametersState])

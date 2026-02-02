@@ -1,0 +1,5 @@
+export const DEFAULT_CPU_RESOURCES = 1
+
+export const DEFAULT_MEMORY_RESOURCES = 1
+
+export const DEFAULT_DISK_RESOURCES = 3

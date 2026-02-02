@@ -137,6 +137,7 @@ export type SandboxParametersInfo = {
   useAutoArchiveInterval: boolean
   useAutoDeleteInterval: boolean
   useSandboxCreateParams: boolean
+  createSandboxFromImage: boolean
   createSandboxParams: CreateSandboxFromImageParams | CreateSandboxFromSnapshotParams
 }
 
