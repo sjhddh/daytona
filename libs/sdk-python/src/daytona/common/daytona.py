@@ -84,7 +84,7 @@ class DaytonaConfig(BaseModel):
     jwt_token: str | None = None
     organization_id: str | None = None
     _experimental: Annotated[
-        dict[str, any] | None,
+        dict[str, object] | None,
         Field(
             default=None,
             description="Configuration for experimental features",
