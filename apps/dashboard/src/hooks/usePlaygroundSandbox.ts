@@ -41,17 +41,9 @@ export function usePlaygroundSandbox(disableSandboxAutoCreate?: boolean): UsePla
 
   const updateSandbox = useCallback(
     async (newSandbox: Sandbox) => {
-      // Delete the previous sandbox if exists
-      if (sandbox) {
-        try {
-          await sandbox.delete()
-        } catch (error) {
-          console.error('Failed to delete previous sandbox:', error)
-        }
-      }
       setSandbox(newSandbox)
     },
-    [sandbox, setSandbox],
+    [setSandbox],
   )
 
   const createSandboxFromParams = useCallback(async (): Promise<Sandbox> => {
