@@ -35,7 +35,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.semconv.attributes import service_attributes
 
 from .._utils.enum import to_enum
-from .._utils.errors import DaytonaError, intercept_errors
+from .._utils.errors import intercept_errors
 from .._utils.otel_decorator import with_instrumentation
 from .._utils.stream import process_streaming_response
 from .._utils.timeout import with_timeout

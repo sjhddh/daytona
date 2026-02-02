@@ -1,10 +1,10 @@
 import asyncio
 
-from daytona import AsyncDaytona, Resources, DaytonaConfig
+from daytona import AsyncDaytona, DaytonaConfig, Resources
 
 
 async def main():
-    async with AsyncDaytona(config=DaytonaConfig(otel_enabled=True)) as daytona:
+    async with AsyncDaytona(config=DaytonaConfig(_experimental={"otel_enabled": True})) as daytona:
         print("Creating sandbox")
         sandbox = await daytona.create()
         print("Sandbox created")
